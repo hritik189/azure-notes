@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-Azure Application Gateway is a **Layer 7 (HTTP/HTTPS) load balancer** that enables you to manage traffic to your web applications. It provides advanced routing capabilities, SSL termination, Web Application Firewall (WAF), and integration with other Azure services for high availability and security.
+>Azure Application Gateway is a **Layer 7 (HTTP/HTTPS) load balancer** that enables you to manage traffic to your web applications. It provides advanced routing capabilities, SSL termination, Web Application Firewall (WAF), and integration with other Azure services for high availability and security.
 
 ### Key Benefits:
 - Layer 7 load balancing with advanced routing

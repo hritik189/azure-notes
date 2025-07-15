@@ -20,7 +20,7 @@
 
 ### IP Addressing
 
-IP (Internet Protocol) addresses are unique identifiers assigned to devices on a network, enabling communication between devices.
+>IP (Internet Protocol) addresses are unique identifiers assigned to devices on a network, enabling communication between devices.
 
 #### IPv4 (Internet Protocol version 4)
 - **32-bit** address written in decimal notation

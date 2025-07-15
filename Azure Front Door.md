@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-Azure Front Door is a **Layer 7 (HTTP/HTTPS)** global load balancer and Application Delivery Controller (ADC) that uses Microsoft's global edge network to optimize web traffic routing. It provides high-performance, low-latency, secure, and scalable delivery of websites and web applications across multiple regions.
+>Azure Front Door is a **Layer 7 (HTTP/HTTPS)** global load balancer and Application Delivery Controller (ADC) that uses Microsoft's global edge network to optimize web traffic routing. It provides high-performance, low-latency, secure, and scalable delivery of websites and web applications across multiple regions.
 
 ### Key Benefits:
 - **Global HTTP(S) Load Balancing**: Distribute traffic across multiple regions

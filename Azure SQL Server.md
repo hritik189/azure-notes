@@ -675,4 +675,4 @@ An on-demand compute tier that automatically scales based on workload demand and
 - **Index Management**: Maintain appropriate indexes
 - **Resource Monitoring**: Monitor resource utilization and scale as needed
 
-Azure SQL Database provides a comprehensive, fully managed database solution that scales with your needs while providing enterprise-grade security, performance, and availability. The key to success is choosing the right deployment model, service tier, and configuration options based on your specific requirements and workload characteristics.
+>Azure SQL Database provides a comprehensive, fully managed database solution that scales with your needs while providing enterprise-grade security, performance, and availability. The key to success is choosing the right deployment model, service tier, and configuration options based on your specific requirements and workload characteristics.
