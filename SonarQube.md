@@ -1,234 +1,129 @@
 # SonarQube
 
-## Introduction
->SonarQube is an open-source platform developed by SonarSource for continuous inspection of code quality. It performs automatic reviews with static analysis of code to detect bugs, code smells, and security vulnerabilities across multiple programming languages. SonarQube serves as a central hub for code quality management, providing developers and teams with actionable insights to maintain high code standards throughout the development lifecycle.
+*An open-source platform for continuous inspection of code quality. It runs static analysis to find bugs, security vulnerabilities, and maintainability issues ("code smells") across 25+ languages, and gates your CI/CD pipeline on objective quality criteria.*
 
-## Core Features
-- **Static Code Analysis**: Comprehensive analysis without code execution
-- **Multi-language Support**: 25+ programming languages including Java, C#, JavaScript, Python, TypeScript, PHP, Go, and more
-- **Bug Detection**: Identifies potential runtime errors and logical issues
-- **Security Vulnerability Detection**: Finds security hotspots and vulnerabilities (OWASP Top 10)
-- **Code Smell Detection**: Identifies maintainability issues and technical debt
-- **Detailed Dashboards**: Visual representation of code quality metrics
-- **Historical Tracking**: Trend analysis and quality evolution over time
-- **Customizable Rules**: Ability to create custom coding standards
+## 1. The Problem It Solves
 
-## Architecture Components
-- **SonarQube Server**: Central processing unit that analyzes code and stores results
-- **Database**: Stores analysis results, configurations, and user data (PostgreSQL, Oracle, SQL Server)
-- **Web Interface**: User-friendly dashboard for viewing results and configuration
-- **Scanner**: Collects source code and metadata, sends to server for analysis
-- **Plugins**: Extend functionality for specific languages or integrations
-- **Compute Engine**: Background service that processes analysis reports
+Code quality erodes silently. Every rushed change adds a little **technical debt**; manual code review is inconsistent and misses whole classes of issues (subtle null dereferences, injection flaws, copy-pasted blocks); and different developers apply different standards. By the time quality problems surface — a production bug, a security incident — they are expensive to fix and spread across the codebase.
 
-## Continuous Inspection
-Continuous inspection is the practice of regularly analyzing code quality throughout the development process rather than as a one-time activity.
+SonarQube makes quality **objective, automated, and continuous**: every commit or pull request is analyzed against the same rules, and a pass/fail **Quality Gate** stops substandard code before it merges. Quality stops being a matter of opinion in review and becomes a measured, enforced property of the build.
 
-### Key Benefits:
-- **Early Issue Detection**: Catch problems before they reach production
-- **Consistent Quality**: Maintain coding standards across the entire codebase
-- **Technical Debt Management**: Monitor and control accumulating technical debt
-- **Developer Feedback**: Immediate feedback on code quality changes
-- **Trend Analysis**: Track quality metrics over time
+## 2. What SonarQube Is
 
-### Implementation Strategies:
-- **CI/CD Integration**: Automatic analysis on every commit or pull request
-- **IDE Integration**: Real-time feedback during development
-- **Scheduled Analysis**: Regular full project scans
-- **Branch Analysis**: Quality checks on feature branches
-- **Pull Request Decoration**: Display quality metrics directly in pull requests
+SonarQube is a **self-hosted server** that performs **static analysis** — examining source code *without running it* — and stores the results as a queryable history. You run it as a service in your own infrastructure (a server process plus a database), point a **scanner** at your code (usually from CI), and view findings and trends in its web dashboard.
 
-## Quality Gates
-Quality Gates are a set of conditions that must be met for code to be considered ready for production.
+It analyzes code along four dimensions:
+- **Bugs** — code that is likely to behave incorrectly at runtime.
+- **Vulnerabilities** — security flaws that are exploitable.
+- **Security hotspots** — security-sensitive code that needs human review (not necessarily a flaw).
+- **Code smells** — maintainability issues that make code harder to change.
 
-### Purpose:
-- **Enforce Standards**: Ensure code meets minimum quality requirements
-- **Prevent Regression**: Block releases that introduce quality issues
-- **Automate Decisions**: Reduce manual code review overhead
-- **Maintain Consistency**: Apply same standards across all projects
+## 3. How It Works — Architecture and Analysis Flow
 
-### Default Quality Gate Conditions:
-- Coverage on new code: ≥80%
-- Duplicated lines on new code: ≤3%
-- Maintainability rating on new code: A
-- Reliability rating on new code: A
-- Security rating on new code: A
-- Security hotspots reviewed: 100%
+SonarQube has four moving parts:
 
-### Custom Quality Gates:
-- **Project-specific Gates**: Tailored conditions for different project types
-- **Gradual Implementation**: Phased approach to introducing stricter standards
-- **Metric Combinations**: Multiple conditions for comprehensive quality assessment
-- **Pass/Fail Logic**: Clear criteria for deployment decisions
+```
+[ Scanner ]  ──analysis report──►  [ SonarQube Server ]
+ (runs in CI,                          ├─ Compute Engine (processes the report)
+  reads source)                        ├─ Web Server (dashboard, API)
+                                       └─ Database (results, history, config)
+```
 
-## Centralized Quality Management
-SonarQube provides a centralized platform for managing code quality across multiple projects and teams.
+- **Scanner** — runs where your code is (a CI agent, a developer machine). It collects source files plus metadata (and imported test-coverage reports) and sends an analysis report to the server. It does **not** decide pass/fail itself.
+- **Server / Compute Engine** — receives the report, applies the active rule set, computes metrics, generates issues, and stores everything.
+- **Database** — PostgreSQL (recommended), SQL Server, or Oracle; holds results, configuration, and history.
+- **Web interface** — dashboards, issue triage, configuration, and the REST API.
 
-### Centralization Benefits:
-- **Unified Standards**: Consistent quality rules across all projects
-- **Cross-project Visibility**: Organization-wide quality overview
-- **Resource Optimization**: Shared infrastructure and configuration
-- **Governance**: Centralized policy enforcement and compliance tracking
-- **Knowledge Sharing**: Best practices and standards distribution
+**Analysis flow:** collect source → parse → execute rules → compute metrics (complexity, coverage, duplication) → generate issues with severities → store → evaluate the Quality Gate → report status back to CI.
 
-### Implementation Aspects:
-- **Global Settings**: Organization-wide quality profiles and gates
-- **Project Organization**: Hierarchical project structure and permissions
-- **User Management**: Role-based access control and team assignments
-- **Portfolio View**: Aggregate quality metrics across project portfolios
-- **Compliance Reporting**: Enterprise-level quality and security reporting
+**Analysis scope** can be a full project scan, an **incremental** analysis of changed code, a **branch** analysis, or a **pull request** analysis (branch and PR analysis require Developer Edition or higher — see §7).
 
-## Setup and Installation
+## 4. Metrics and Ratings
 
-### Prerequisites:
-- Java 11 or higher
-- Supported database (PostgreSQL recommended)
-- Adequate system resources (minimum 2GB RAM)
+SonarQube quantifies quality so it can be gated:
 
-### Installation Steps:
-1. Download SonarQube from official website
-2. Extract and configure database connection
-3. Set system properties and JVM parameters
-4. Start SonarQube server
-5. Access web interface at `http://localhost:9000`
-6. Complete initial setup wizard
-7. Install and configure scanner tools
+| Metric | Meaning |
+|---|---|
+| Lines of code | Total and new code volume |
+| Cyclomatic complexity | How branchy / hard to test the code is |
+| Coverage | Test coverage % (imported from your test runner, not computed by SonarQube) |
+| Duplication | % of duplicated lines |
+| Technical debt | Estimated time to fix all maintainability issues |
+| Reliability / Security / Maintainability | Letter ratings (A–E) derived from issue severity |
 
-### Configuration:
-- **Database Setup**: Configure connection strings and credentials
-- **Security Configuration**: LDAP/AD integration, authentication
-- **Plugin Installation**: Language analyzers and third-party integrations
-- **License Management**: Commercial edition license configuration
+The **A–E maintainability rating** maps to the technical-debt ratio: **A** = 0–5%, **B** = 6–10%, **C** = 11–20%, **D** = 21–50%, **E** = >50%.
 
-## Code Analysis Process
+## 5. Quality Gates and "Clean as You Code"
 
-### Analysis Workflow:
-1. **Code Collection**: Scanner gathers source files and metadata
-2. **Preprocessing**: File parsing and initial analysis
-3. **Rule Execution**: Apply quality rules and checks
-4. **Metric Calculation**: Compute complexity, coverage, and other metrics
-5. **Issue Generation**: Create findings and assign severity levels
-6. **Storage**: Store results in database
-7. **Reporting**: Generate dashboards and reports
+A **Quality Gate** is a set of pass/fail conditions a project must meet to be considered releasable. When the gate fails, the CI step fails and the merge is blocked. The default ("Sonar way") gate evaluates **new code** and requires:
 
-### Analysis Types:
-- **Full Analysis**: Complete project scan with all metrics
-- **Incremental Analysis**: Focus on changed code only
-- **Branch Analysis**: Separate analysis for feature branches
-- **Pull Request Analysis**: Analysis of proposed changes
-- **Baseline Analysis**: Establish quality baseline for new projects
+- Coverage on new code ≥ 80%
+- Duplicated lines on new code ≤ 3%
+- Maintainability / Reliability / Security rating on new code = A
+- Security hotspots reviewed = 100%
 
-## Integration Capabilities
+The philosophy behind this is **Clean as You Code** (also called *fix the leak*): instead of trying to fix an entire legacy codebase at once, you hold a strict standard on **new and changed code only**. Quality then improves steadily as the code is touched, without an impossible up-front cleanup. This is the single most important concept for adopting SonarQube successfully.
 
-### CI/CD Integration:
-- **Jenkins**: SonarQube Scanner plugin
-- **GitHub Actions**: Official SonarQube action
-- **Azure DevOps**: Azure DevOps extension
-- **GitLab CI**: Native integration support
-- **Bamboo**: SonarQube Bamboo plugin
-- **TeamCity**: Built-in SonarQube support
+Custom gates let you tailor conditions per project type or roll out stricter standards gradually.
 
-### IDE Integration:
-- **SonarLint**: Real-time analysis in IDE
-- **Eclipse**: SonarQube plugin
-- **IntelliJ IDEA**: SonarLint plugin
-- **Visual Studio**: SonarLint extension
-- **VS Code**: SonarLint extension
+## 6. Continuous Inspection — Where It Plugs In
 
-### Version Control Integration:
-- **Pull Request Decoration**: Quality metrics in pull requests
-- **Branch Protection**: Prevent merging of failing branches
-- **Commit Status**: Quality gate status in commit history
-- **Webhook Integration**: Real-time notifications and updates
+Analysis happens at several points in the workflow, the earlier the better:
 
-## Security Features
+- **IDE — SonarLint** gives real-time feedback as you type (Eclipse, IntelliJ, VS Code, Visual Studio), and can connect to the server to share the same rules.
+- **Pull request analysis** — the scanner runs on the PR; **PR decoration** posts the new-code issues and gate status directly onto the PR in GitHub / Azure DevOps / GitLab, and **branch protection** blocks merging a failing PR.
+- **CI/CD pipeline** — analysis runs on every build via the scanner. Integrations exist for **Azure DevOps**, GitHub Actions, Jenkins, GitLab CI, Bamboo, and TeamCity.
+- **Scheduled full scans** — periodic complete analysis of the main branch.
 
-### Security Analysis:
-- **OWASP Top 10**: Detection of common web vulnerabilities
-- **SANS Top 25**: Identification of dangerous software errors
-- **Security Hotspots**: Potential security-sensitive code
-- **Vulnerability Assessment**: Severity classification and remediation guidance
-- **Dependency Analysis**: Third-party library vulnerability scanning
+## 7. Going Deeper
 
-### Security Hotspots:
-- **Authentication**: Weak authentication mechanisms
-- **Authorization**: Insufficient access controls
-- **Input Validation**: Injection vulnerabilities
-- **Cryptography**: Weak encryption practices
-- **Session Management**: Session handling issues
+### Editions (what gates which feature)
 
-## Metrics and Measurements
+| Edition | Adds |
+|---|---|
+| **Community** (free) | Core analysis, main branch only — **no branch or PR analysis** |
+| **Developer** | **Branch + pull-request analysis**, more languages, taint/security analysis |
+| **Enterprise** | Portfolio management, governance/compliance reporting, parallel processing |
+| **Data Center** | High availability, horizontal scaling |
 
-### Key Metrics:
-- **Lines of Code**: Total and new code volume
-- **Complexity**: Cyclomatic complexity measurement
-- **Coverage**: Test coverage percentage
-- **Duplication**: Code duplication percentage
-- **Technical Debt**: Estimated remediation time
-- **Reliability**: Bug density and severity
-- **Security**: Vulnerability count and severity
-- **Maintainability**: Code smell density
+Branch and PR analysis being a **Developer Edition** feature (not Community) is the most common surprise — the free edition analyzes only the main branch.
 
-### Quality Ratings:
-- **A**: 0-5% technical debt ratio
-- **B**: 6-10% technical debt ratio
-- **C**: 11-20% technical debt ratio
-- **D**: 21-50% technical debt ratio
-- **E**: >50% technical debt ratio
+### Security analysis
+Detects **OWASP Top 10** and **CWE/SANS Top 25** categories, classifies **security hotspots** by area (authentication, authorization, input validation, cryptography, session management), and (in paid editions) performs **taint analysis** to track tainted input to a sink. SonarQube focuses on first-party code; dependency vulnerability scanning is better covered by dedicated SCA tools.
 
-## Best Practices
+### Centralized governance
+Global quality profiles (rule sets) and quality gates apply organization-wide; portfolio views aggregate quality across many projects; RBAC and LDAP/AD integration manage access; compliance reports roll up for stakeholders.
 
-### Implementation:
-- **Gradual Rollout**: Implement SonarQube incrementally across projects
-- **Team Training**: Educate developers on quality standards and tools
-- **Custom Rules**: Develop organization-specific quality rules
-- **Regular Reviews**: Periodic review and adjustment of quality gates
-- **Performance Monitoring**: Monitor analysis performance and optimize
+## 8. Setup
 
-### Code Quality:
-- **Fix the Leak**: Focus on improving new code quality
-- **Prioritize Issues**: Address critical and high-severity issues first
-- **Regular Maintenance**: Schedule time for technical debt reduction
-- **Code Reviews**: Combine automated analysis with human review
-- **Documentation**: Maintain clear quality standards documentation
+**Prerequisites:** Java 17+, a supported database (PostgreSQL recommended — do **not** use the bundled H2 in production), and adequate resources (the Compute Engine and Elasticsearch index are memory-hungry; start with several GB of RAM).
 
-### Organizational:
-- **Quality Champions**: Designate quality advocates in each team
-- **Metrics Visibility**: Share quality metrics with stakeholders
-- **Continuous Improvement**: Regular process evaluation and enhancement
-- **Cross-team Collaboration**: Share best practices across teams
-- **Executive Reporting**: Regular quality status reports to management
+1. Download and extract SonarQube; configure the database connection in `sonar.properties`.
+2. Set JVM/heap parameters for the web and compute processes.
+3. Start the server; open `http://localhost:9000` and complete the setup wizard.
+4. Configure authentication (LDAP/AD/SSO) and install any language/plugin analyzers.
+5. Generate a token and wire the **scanner** into your CI pipeline.
 
-## Advanced Features
+## ⚠️ Gotchas
 
-### Enterprise Edition:
-- **Branch Analysis**: Quality analysis for all branches
-- **Pull Request Analysis**: Pre-merge quality checks
-- **Portfolio Management**: Multi-project quality oversight
-- **Governance**: Advanced compliance and reporting features
-- **LDAP Integration**: Enterprise authentication support
-
-### Developer Experience:
-- **IDE Integration**: Real-time quality feedback
-- **Custom Dashboards**: Personalized quality views
-- **Notification System**: Configurable alerts and updates
-- **API Access**: Programmatic access to quality data
-- **Webhook Support**: Integration with external tools
+- **Community Edition has no branch/PR analysis.** It scans only the main branch; branch and PR analysis need Developer Edition or higher.
+- **SonarQube does not run your tests.** Coverage is *imported* from a report your test runner produces (e.g. `lcov`, `cobertura`, `jacoco`). No report in, no coverage shown — gates then fail on "0% coverage."
+- **Don't gate on overall code.** Pointing the gate at total coverage/issues on a legacy codebase makes it permanently red. Use the default new-code gate (Clean as You Code).
+- **Memory and the embedded search index.** Under-provisioned heap or disk causes the Compute Engine or Elasticsearch to fail; large projects need tuning.
+- **Never run on the bundled H2 database in production.** It is for evaluation only and loses data; use PostgreSQL.
+- **Some languages need the build.** Compiled languages (C#, Java, C/C++) require analysis to run as part of (or alongside) the build so the scanner sees compiled output.
 
 ## Troubleshooting
 
-### Common Issues:
-- **Memory Problems**: Insufficient heap size configuration
-- **Database Issues**: Connection and performance problems
-- **Scanner Errors**: Configuration and network issues
-- **Plugin Conflicts**: Incompatible plugin versions
-- **Performance Issues**: Large project analysis optimization
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Quality Gate shows 0% coverage | No coverage report imported | Generate a coverage report in CI and point `sonar.coverage` paths at it |
+| Server won't start | Heap/disk too small, or Elasticsearch bootstrap checks failing | Increase RAM; raise `vm.max_map_count`; check `sonar.log` |
+| Branch/PR analysis "not available" | Community Edition | Upgrade to Developer+ |
+| Scanner can't reach server | Network/token/URL misconfig | Verify `sonar.host.url` and token; check firewall |
+| Analysis very slow on large repos | Single-threaded compute, big project | Tune heap; Enterprise adds parallel processing; scope analysis |
+| C#/Java issues missing | Scanner didn't see compiled output | Run the begin/end scanner steps around the build |
 
-### Maintenance:
-- **Regular Backups**: Database and configuration backups
-- **Log Monitoring**: Regular log review and analysis
-- **Version Updates**: Keep SonarQube and plugins updated
-- **Performance Tuning**: Optimize analysis performance
-- **Cleanup Tasks**: Regular housekeeping and maintenance
+## Quick Reference
 
----
+SonarQube is a self-hosted **static analysis** platform: a **scanner** (run from CI) sends an analysis report to the **server** (compute engine + web UI + database), which finds **bugs, vulnerabilities, security hotspots, and code smells** and computes **metrics and A–E ratings**. A **Quality Gate** turns those into pass/fail and blocks the build when new code falls short — applied under the **Clean as You Code** principle (hold the standard on *new* code, not the whole legacy base). It plugs in at the **IDE (SonarLint)**, on **pull requests (PR decoration)**, and in **CI/CD (Azure DevOps, GitHub Actions, Jenkins, etc.)**. **Branch and PR analysis require Developer Edition**; coverage is **imported** from your test runner, not computed; and production needs **PostgreSQL** and **Java 17+**.

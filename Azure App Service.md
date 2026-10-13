@@ -1,612 +1,277 @@
 # Azure App Service
 
-## Introduction to Azure App Service
+*Azure's fully managed platform for hosting web apps, REST APIs, and mobile backends. You provide the code (or a container); Azure runs, scales, patches, and load-balances it.*
 
-> Azure App Service is a fully managed Platform-as-a-Service (PaaS) offering from Microsoft Azure that enables developers to build, host, and scale web applications, RESTful APIs, and mobile backends without managing underlying infrastructure.
+## 1. The Problem It Solves
 
-### What is Azure App Service?
-- **Fully Managed**: Microsoft handles infrastructure, OS patching, security updates, and maintenance
-- **Multi-language Support**: .NET, Java, Node.js, Python, PHP, Ruby, and more
-- **Enterprise-grade**: Built-in security, compliance, and scalability features
-- **DevOps Integration**: Seamless CI/CD integration with popular development tools
+Before managed platforms, hosting a web application required handling all of the following yourself:
 
-### Key Benefits
-- **Focus on Code**: Developers can concentrate on application logic rather than infrastructure
-- **Built-in DevOps**: Integrated deployment pipelines and monitoring
-- **Global Scale**: Deploy applications worldwide with automatic load balancing
-- **Cost-effective**: Pay only for what you use with flexible pricing tiers
+1. Provision a server (physical, then later a VM).
+2. Install and continually patch the operating system, including security updates.
+3. Install the web server (IIS, Nginx) and the language runtime (.NET, Node, Python).
+4. Obtain and configure TLS certificates for HTTPS.
+5. Set up a load balancer and a second server so a single failure does not cause downtime.
+6. Manage scaling — add capacity before traffic spikes and remove it afterward.
 
----
+None of these tasks are the application itself; they are infrastructure plumbing common to every web app. App Service removes this work. You supply the application; Azure handles items 1–6.
 
-## Azure App Service Plans
+This positions App Service on the spectrum of how much the platform manages on your behalf:
 
-An **App Service Plan** is the foundation that defines the compute resources and features available to your applications.
-
-### What is an App Service Plan?
-An App Service Plan defines:
-- **Region**: Geographic location where your app runs
-- **Instance Size**: VM size (Small, Medium, Large, Extra Large)
-- **Number of Instances**: Scale count for your applications
-- **Pricing Tier**: Feature set and performance level
-- **Operating System**: Windows or Linux
-
-### Multiple Apps per Plan
-- One App Service Plan can host multiple applications
-- All apps in the same plan share the same compute resources
-- Cost optimization by consolidating compatible apps
-
-### Pricing Tiers and Features
-
-#### Free (F1)
-- **Purpose**: Development and testing only
-- **Features**:
-  - 1 GB storage
-  - No custom domains
-  - No SSL support
-  - No scaling options
-  - 60 minutes CPU time per day
-
-#### Shared (D1)
-- **Purpose**: Low-traffic apps
-- **Features**:
-  - 1 GB storage
-  - Custom domains supported
-  - Shared compute resources
-  - No scaling options
-  - 240 minutes CPU time per day
-
-#### Basic (B1–B3)
-- **Purpose**: Small production apps
-- **Features**:
-  - Dedicated compute resources
-  - Custom domains and SSL
-  - Up to 3 instances (manual scaling only)
-  - 10 GB storage (B1), 10 GB (B2), 10 GB (B3)
-  - No deployment slots
-
-#### Standard (S1–S3)
-- **Purpose**: Production applications
-- **Features**:
-  - Auto-scaling (up to 10 instances)
-  - 5 deployment slots
-  - Daily backups
-  - Traffic Manager integration
-  - 50 GB storage
-
-#### Premium (P1–P4)
-- **Purpose**: High-performance production apps
-- **Features**:
-  - Enhanced performance and scaling (up to 30 instances)
-  - 20 deployment slots
-  - VNet integration
-  - 250 GB storage
-  - Advanced monitoring
-
-#### Isolated (I1–I3)
-- **Purpose**: Enterprise-grade applications
-- **Features**:
-  - Dedicated Azure environment
-  - VNet integration with private endpoints
-  - Up to 100 instances
-  - Enhanced security and compliance
-  - 1 TB storage
-
----
-
-## Deployment Slots
-
-Deployment slots are a powerful feature that allows you to deploy different versions of your app to separate environments within the same App Service.
-
-### What are Deployment Slots?
-- **Separate Environments**: Each slot is a live app with its own hostname
-- **Production + Staging**: Production slot + additional staging slots
-- **Configuration Isolation**: Each slot can have different app settings and connection strings
-- **Available in**: Standard, Premium, and Isolated pricing tiers
-
-### Key Benefits
-- **Zero-downtime Deployments**: Swap between slots without downtime
-- **Testing in Production Environment**: Test with production-like settings
-- **Easy Rollback**: Quickly revert to previous version if issues arise
-- **Gradual Rollouts**: Use traffic routing for A/B testing
-
-### Slot Configuration Types
-
-#### Slot-specific Settings
-- Connection strings
-- App settings marked as "slot setting"
-- Custom domain bindings
-- SSL certificates and bindings
-- Authentication settings
-
-#### Swappable Settings
-- App settings (unless marked as slot setting)
-- General configuration
-- Handler mappings
-- Monitoring and diagnostic settings
-
-### Common Deployment Patterns
-
-#### Blue-Green Deployment
-1. Deploy new version to staging slot
-2. Test thoroughly in staging
-3. Swap staging with production
-4. Monitor production traffic
-5. Swap back if issues occur
-
-#### Canary Deployment
-1. Deploy new version to staging slot
-2. Route small percentage of traffic to staging
-3. Monitor metrics and user feedback
-4. Gradually increase traffic percentage
-5. Complete swap when confident
-
----
-
-## Scaling in Azure App Service
-
-Azure App Service provides two types of scaling to handle varying loads and performance requirements.
-
-### Scale Up (Vertical Scaling)
-**Definition**: Increasing the power of existing instances by upgrading to a higher pricing tier.
-
-#### When to Scale Up
-- Need more CPU, memory, or storage
-- Require additional features (deployment slots, custom domains)
-- Single-instance applications that can't be distributed
-
-#### How to Scale Up
-1. Navigate to App Service in Azure Portal
-2. Go to "Scale up (App Service plan)"
-3. Select desired pricing tier
-4. Click "Apply"
-
-#### Considerations
-- **Downtime**: Brief interruption during tier change
-- **Cost Impact**: Immediate cost change
-- **Feature Availability**: Higher tiers unlock additional features
-
-### Scale Out (Horizontal Scaling)
-**Definition**: Increasing the number of instances running your application.
-
-#### Manual Scaling
-- Manually set instance count
-- Suitable for predictable workloads
-- Available in Basic tier and above
-
-#### Auto-scaling
-- Automatically adjusts instance count based on rules
-- Available in Standard tier and above
-- More cost-effective for variable workloads
-
-### Auto-scaling Configuration
-
-#### Metric-based Scaling
-**CPU Percentage**
-- Scale out when CPU > 70%
-- Scale in when CPU < 30%
-
-**Memory Usage**
-- Scale out when memory > 80%
-- Scale in when memory < 40%
-
-**HTTP Queue Length**
-- Scale out when queue length > 10
-- Scale in when queue length < 5
-
-**Custom Metrics**
-- Application-specific metrics
-- External metrics via webhooks
-
-#### Schedule-based Scaling
 ```
-Business Hours Pattern:
-- Monday-Friday 9 AM - 6 PM: 5 instances
-- Evenings and weekends: 2 instances
-
-Peak Season Pattern:
-- Black Friday period: 10 instances
-- Regular periods: 3 instances
+You manage everything ◄──────────────────────────────► Azure manages everything
+   IaaS                         PaaS                          FaaS
+   (Virtual Machine)       (App Service)                  (Functions)
+   you patch the OS,       you provide code,              you provide one
+   install the runtime,    Azure runs it on               function, Azure
+   manage scaling          managed servers                runs it on demand
 ```
 
-#### Auto-scaling Rules Configuration
-1. **Metric Source**: Choose metric (CPU, Memory, etc.)
-2. **Threshold**: Define trigger value
-3. **Action**: Scale out/in and by how many instances
-4. **Cool-down Period**: Wait time before next scaling action
-5. **Min/Max Instances**: Set boundaries for scaling
+App Service is the **PaaS** middle ground: more control than serverless, far less operational overhead than a virtual machine.
 
----
+## 2. What App Service Is
 
-## Deploying Web Apps to Azure App Service
+App Service runs your application on a pool of virtual machines that Azure owns and operates. You do not have direct access to those machines — there is no SSH login, no OS patching, and no load balancer for you to configure. Azure manages the infrastructure; you manage only the application and its configuration: app settings, scaling rules, and deployments.
 
-Azure App Service supports multiple deployment methods to accommodate different development workflows.
+Because you do not administer the machines, everything you control is expressed as configuration. That configuration is built on a single relationship, described next.
 
-### Deployment Methods
+## 3. How It Works — Plans and Apps
 
-#### 1. GitHub Actions (Recommended)
-**Setup Process**:
-1. Connect GitHub repository to App Service
-2. Azure generates workflow file automatically
-3. Customize build and deployment steps
-4. Commit triggers automatic deployment
+App Service is built on two objects. Everything else follows from them.
 
-**Benefits**:
-- Full CI/CD pipeline
-- Built-in testing integration
-- Deployment history and rollback
-- Multi-environment support
+- **App Service Plan** — the compute resources you rent: a region, an operating system (Windows or Linux), an instance size, an instance count, and a pricing tier. The plan is what you pay for.
+- **App (Web App)** — your application code running on a plan.
 
-**Example Workflow**:
-```yaml
-name: Deploy to Azure App Service
-on:
-  push:
-    branches: [ main ]
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Setup Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '14'
-    - name: Install dependencies
-      run: npm install
-    - name: Build application
-      run: npm run build
-    - name: Deploy to Azure
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: 'your-app-name'
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+A single plan can host multiple apps, and those apps share the plan's CPU and memory:
+
+```
+App Service Plan   ← the rented VMs (region · OS · size · count · tier)
+   ├── App: storefront      ┐
+   ├── App: admin-portal    ├─ all three share the plan's CPU/RAM
+   └── App: internal-api    ┘
 ```
 
-#### 2. Azure DevOps
-**Features**:
-- Advanced pipeline configurations
-- Multi-stage deployments
-- Environment approvals
-- Enterprise integration
+This shared compute enables cost savings (consolidating low-traffic apps onto one plan) but also introduces resource contention (a busy app can consume capacity needed by others — see Gotchas).
 
-#### 3. Local Git
-**Setup**:
-1. Enable local Git in deployment center
-2. Get Git clone URL
-3. Add as remote repository
-4. Push to deploy
+## 4. Pricing Tiers
+
+You do not choose a specific VM model; you choose a **tier** on the plan. The tier determines both the power of the instances and which features are available:
+
+| Tier | Compute | Scale out | Slots | Storage | Key features |
+|---|---|---|---|---|---|
+| **Free (F1)** | Shared, 60 CPU-min/day | none | 0 | 1 GB | testing only; no custom domain or TLS |
+| **Shared (D1)** | Shared, 240 CPU-min/day | none | 0 | 1 GB | custom domains |
+| **Basic (B1–B3)** | Dedicated | manual, ≤3 | 0 | 10 GB | custom domains + TLS, **VNet integration** |
+| **Standard (S1–S3)** | Dedicated | **auto**, ≤10 | 5 | 50 GB | autoscale, deployment slots, daily backups |
+| **Premium (Pv3)** | Faster CPU, more RAM | auto, ≤30 | 20 | 250 GB | **private endpoints**, faster storage |
+| **Isolated (I1–I3)** | Dedicated environment (ASE) | ≤100 | 20 | 1 TB | full network isolation, single-tenant |
+
+Two points to remember: autoscale and deployment slots both begin at the **Standard** tier. **VNet integration (outbound) is available on any dedicated tier — Basic and above**, whereas inbound **private endpoints** require **Premium v2/v3**. Free and Shared run on shared compute and have none of these features, so dev/test on them does not reproduce production behavior.
+
+**Cost model:** you pay for the **plan** — billed per instance-hour for the chosen tier × instance count — *whether or not the app receives any traffic*. Stopping the app does not stop billing; only scaling the plan down or deleting it does. Multiple apps on one plan share that single bill (the most common source of "why is my idle app costing money").
+
+## 5. Scaling
+
+A plan has both an instance size and an instance count, and each can be changed independently.
+
+**Scale up (vertical):** move to a higher tier for more CPU/RAM per instance and additional features. Causes a brief restart. Use when individual requests are resource-intensive or you need a tier-gated feature.
+
+**Scale out (horizontal):** add more instances behind the load balancer. No downtime. Use when concurrent request volume increases.
+
+- **Manual scaling** — you set a fixed instance count. Available at Basic and above. Suitable for predictable load.
+- **Autoscale** — Azure adjusts the instance count automatically. Available at Standard and above. Two trigger styles:
+
+**Metric-based** — scale on observed load:
+
+| Metric | Scale out when | Scale in when |
+|---|---|---|
+| CPU percentage | > 70% | < 30% |
+| Memory usage | > 80% | < 40% |
+| HTTP queue length | > 10 | < 5 |
+| Custom (App Insights / external) | app-defined | app-defined |
+
+**Schedule-based** — scale on time, for known patterns:
+
+```
+Business hours (Mon–Fri 9–18):  5 instances
+Evenings / weekends:            2 instances
+Peak event (e.g. sale day):     10 instances
+```
+
+**Autoscale rule anatomy:** metric source → threshold → action (scale out/in by N) → **cooldown** (wait before the next action) → **min/max** instance bounds. Always set a maximum (a cost ceiling so a spike or retry storm cannot scale without limit) and a cooldown (prevents flapping — repeated scale-out/scale-in on one spike). Keep the scale-out threshold more sensitive than scale-in so capacity is not removed while load is still high.
+
+## 6. Deployment Slots
+
+A **slot** is a separate, live copy of the app on the same plan, each with its own hostname (e.g. `myapp-staging.azurewebsites.net`). Available at Standard and above. Slots let you deploy and validate a new version in a production-identical environment, then move it into production without downtime.
+
+**Which settings move during a swap** is the detail that causes the most production incidents:
+
+| Setting type | Behavior on swap |
+|---|---|
+| Standard app settings, general config, handler mappings, monitoring settings | **Move with the app** (follow the code) |
+| Settings marked **"slot setting" (sticky)** — slot-specific connection strings, custom domains, TLS bindings, auth settings | **Stay pinned** to their slot |
+
+Mark every environment-specific value (database connection string, keys, feature flags) as a slot setting; otherwise the staging database connection string moves into production during the swap.
+
+## 7. How a Slot Swap Works
+
+A swap is not a redeploy — it is a routing change, which is why it causes no downtime. Azure runs three phases:
+
+1. **Pre-swap (warmup + validation)** — the target (staging) instances are restarted with the destination (production) configuration applied, then warmed by sending startup requests. Custom warmup paths and health checks run here. If the app fails to start with production config, the swap is aborted before any traffic moves.
+2. **Swap execution** — once the target is warm and healthy, Azure updates internal routing so production traffic is directed to the now-warm staging instances. The two slots exchange their running instances. Because the instances are already warm, users experience no cold start.
+3. **Post-swap monitoring** — the swapped app is monitored for health and error rates; if checks fail, you swap back (the previous version is still running in the other slot).
+
+**Swap with preview** splits this into two manual steps: phase 1 applies production config to staging and warms it so you can validate against real production settings; you then complete (phase 2) or cancel. Use it whenever startup depends on configuration.
 
 ```bash
-git remote add azure https://your-app@your-app.scm.azurewebsites.net/your-app.git
-git push azure main
+# Standard swap
+az webapp deployment slot swap -g myRG -n myApp --slot staging --target-slot production
+
+# Swap with preview (phase 1)
+az webapp deployment slot swap -g myRG -n myApp --slot staging --target-slot production --action preview
 ```
 
-#### 4. ZIP Deploy
-**Quick Deployment**:
+## 8. Deployment Strategies
+
+Slots and traffic routing make several release strategies possible.
+
+**Blue-Green** is exactly the slot swap in §7: staging (green) holds the new version, the swap promotes it to production, the old version stays in the other slot, and rollback is swapping back. It is the default slot workflow — nothing beyond §7 to add.
+
+**Canary** — release to a small fraction of users first, then increase gradually. Deploy to a staging slot, then use **slot traffic routing** to send a small percentage (e.g. 10%) of production traffic to it. App Service pins each user to their slot with the `x-ms-routing-name` cookie, so a session stays consistent. Monitor error rate and latency, raise the percentage in steps (10 → 25 → 50 → 100), and complete the swap when confident. To abort, route 0% back. Unlike blue-green's all-at-once cutover, canary shifts traffic incrementally to limit blast radius.
+
+```
+1. Deploy new version → staging
+2. Route 10% of production traffic → staging
+3. Monitor metrics; increase % gradually
+4. Complete swap at confidence, or route 0% to roll back
+```
+
+**A/B testing** — mechanically the same as canary (split traffic across slots), but the intent is comparing feature variants by user engagement / business metrics rather than validating release safety.
+
+## 9. Deploying Your Code
+
+| Method | When to use |
+|---|---|
+| **CI/CD (Azure DevOps / GitHub Actions)** | Default for production — build, test, deploy to a slot, swap, with deployment history and rollback |
+| **Container** (pull from **ACR**) | App is already containerized; App Service runs the single container without AKS overhead |
+| **ZIP deploy** (`az webapp deploy`) | Quick manual deployment or scripts |
+| **Local Git** | Push to an Azure-hosted Git remote to deploy |
+| **FTP/FTPS** | Legacy workflows or static files into `/site/wwwroot` |
+
 ```bash
-az webapp deployment source config-zip \
-  --resource-group myResourceGroup \
-  --name myApp \
-  --src myapp.zip
+# ZIP deploy straight to a staging slot
+az webapp deploy -g myRG -n myApp --slot staging --src-path ./app.zip --type zip
 ```
 
-#### 5. FTP/FTPS
-**Manual Deployment**:
-- Get FTP credentials from Azure Portal
-- Upload files to `/site/wwwroot`
-- Suitable for static files or legacy workflows
+**Deployment best practices:** deploy to a staging slot first and swap; configure a **health check** endpoint so failed instances are removed and swaps can validate; run database migrations as backward-compatible changes so old and new versions can coexist during a swap.
 
-### Deployment Best Practices
+**App Service vs AKS:** for a single container with no orchestration requirements, App Service (Linux, pulling from ACR via managed identity) requires less operational effort. Use AKS when you need multi-container orchestration, a service mesh, or pod-level control.
 
-#### Use Deployment Slots
-- Deploy to staging slot first
-- Test thoroughly before production swap
-- Keep production slot stable
+## 10. Configuration and Secrets
 
-#### Implement Health Checks
-- Configure application health endpoints
-- Enable automatic rollback on failure
-- Monitor deployment success rates
+App settings defined on the app are injected into the application as **environment variables** at runtime, so you change behavior (connection strings, flags, endpoints) without redeploying code. They are encrypted at rest, and any of them can be marked as a slot setting (§6).
 
-#### Database Migrations
-- Run migrations during maintenance windows
-- Use deployment slots for database changes
-- Implement backward-compatible changes
+**Key Vault references** let an app setting point to a secret in Azure Key Vault instead of holding the value directly:
 
----
-
-## Authentication and Authorization
-
-Azure App Service provides built-in authentication and authorization capabilities without requiring custom code.
-
-### Authentication Overview
-- **Identity Providers**: Integration with popular identity services
-- **Token Management**: Automatic token handling and refresh
-- **User Claims**: Access to user information from tokens
-- **No Code Required**: Configure through Azure Portal or ARM templates
-
-### Supported Identity Providers
-
-#### Azure Active Directory (AAD)
-- **Enterprise Identity**: Integration with organizational directories
-- **Multi-tenant Support**: Support for multiple Azure AD tenants
-- **Advanced Features**: Conditional access, MFA, group claims
-
-#### Microsoft Account
-- **Consumer Identity**: Personal Microsoft accounts
-- **Integration**: Seamless with Microsoft ecosystem
-
-#### Social Providers
-- **Facebook**: OAuth integration
-- **Google**: Google account authentication
-- **Twitter**: Twitter OAuth
-- **GitHub**: Developer-focused authentication
-
-### Authentication Configuration
-
-#### Step-by-step Setup
-1. **Navigate to App Service** in Azure Portal
-2. **Go to Authentication** in left menu
-3. **Toggle "Enable Authentication"**
-4. **Choose Action**:
-   - Allow anonymous requests
-   - Require authentication
-5. **Add Identity Provider**:
-   - Select provider (AAD, Facebook, etc.)
-   - Configure client ID and secret
-   - Set redirect URLs
-6. **Configure Token Store**: Enable token storage if needed
-
-#### Authentication Settings
-```json
-{
-  "enabled": true,
-  "httpApiPrefixPath": "/.auth",
-  "cookieExpiration": {
-    "convention": "FixedTime",
-    "timeToExpiration": "08:00:00"
-  },
-  "preserveUrlFragmentsForLogins": false,
-  "allowedExternalRedirectUrls": [
-    "https://myapp.com/callback"
-  ]
-}
+```
+@Microsoft.KeyVault(SecretUri=https://myvault.vault.azure.net/secrets/db-password/)
 ```
 
-### Authorization Features
+App Service resolves the reference at startup using the app's **managed identity** (§13), so the secret never lives in configuration or source control, and rotating it in Key Vault updates the app without a redeploy. This is the standard pattern for secrets in App Service.
 
-#### Role-Based Access Control (RBAC)
-- **App-level Roles**: Define custom roles for your application
-- **AAD Groups**: Use Azure AD groups for authorization
-- **Claims-based**: Access user claims for fine-grained control
+## 11. Kudu / the SCM Site
 
-#### Custom Authorization
-- **Easy Auth Headers**: Access user information via HTTP headers
-- **Token Validation**: Validate tokens in application code
-- **API Integration**: Secure APIs with same authentication
+Every app has a companion **SCM (Source Control Management) site** at `https://<app>.scm.azurewebsites.net`, powered by the **Kudu** engine. It is the machinery behind deployment and the first place a senior engineer goes to debug App Service. Kudu provides:
 
-### Working with Authentication in Code
+- the **deployment engine** — receives ZIP/Git/CI pushes, runs the build (Oryx on Linux), and places files in `/site/wwwroot`;
+- **log streaming** plus access to deployment and application logs;
+- a **debug console** (Bash/PowerShell) into the live instance's file system;
+- a **process explorer**, environment-variable inspection, and WebJobs management;
+- REST and Git endpoints that CI/CD pipelines call.
 
-#### Accessing User Information
-```csharp
-// C# Example
-var user = HttpContext.User;
-var name = user.Identity.Name;
-var email = user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value;
-```
+Access uses the same credentials/role as the app. On Linux, the app runs in one container and Kudu runs in a separate sidecar container.
+
+## 12. Authentication and Authorization ("Easy Auth")
+
+App Service provides built-in authentication that runs as a layer **in front of** the application, requiring no authentication code. It intercepts each request, validates the token, optionally stores tokens, and passes the user identity to the app through HTTP headers. Because it sits in front, the app can remain authentication-unaware or simply read the injected identity.
+
+**Identity providers:** Entra ID (AAD) for organizational identity (adds MFA, conditional access, multi-tenant, group claims), Microsoft accounts for consumer identity, and social providers (Google, Facebook, GitHub).
+
+**Authorization:** restrict access using app-level roles, Entra ID group membership, or token claims for fine-grained control.
+
+**Reading the identity in code** — the platform injects a base64-encoded JSON principal header:
 
 ```javascript
-// Node.js Example
+// Node.js — read the authenticated user
 app.get('/profile', (req, res) => {
-  const user = req.headers['x-ms-client-principal'];
-  const userInfo = JSON.parse(Buffer.from(user, 'base64').toString());
-  res.json(userInfo);
+  const header = req.headers['x-ms-client-principal'];
+  const user = JSON.parse(Buffer.from(header, 'base64').toString());
+  res.json(user);
 });
 ```
 
----
+## 13. Networking and Security
 
-## Slot Swapping Operations
+- **VNet integration** (**Basic+**, any dedicated tier) — *outbound* access: the app reaches private resources (a SQL Managed Instance, a private endpoint) inside your virtual network.
+- **Private endpoint** (**Premium v2/v3**) — *inbound* access: the app receives a private IP and is removed from public exposure.
+- **IP restrictions / service tags** — allow-list the sources permitted to reach the app.
+- **TLS certificates** — free Azure-managed certificates for custom domains, or upload your own and bind them.
+- **Managed identity** — pull images from ACR and read secrets from Key Vault (§10) without storing any credentials.
 
-Slot swapping is a core feature that enables zero-downtime deployments and easy rollbacks.
+## 14. App Service Environment (ASE)
 
-### Understanding Slot Swapping
-- **Instant Switch**: URLs and traffic immediately redirect to swapped content
-- **Configuration Handling**: Manages different types of settings appropriately
-- **Rollback Capability**: Easy reversion if issues are detected
+The Isolated tier runs on an **App Service Environment** — a fully dedicated, **single-tenant** deployment of App Service injected directly into your own virtual network. Unlike the shared multi-tenant service, no other customer's apps run on the same infrastructure, and both inbound and outbound traffic stay inside your VNet. It is used for high scale, strong network isolation, and compliance requirements, and carries a higher baseline cost because the environment itself is dedicated to you.
 
-### Swap Process Details
+## 15. Monitoring and Diagnostics
 
-#### Pre-swap Validation
-1. **Warmup Phase**: Target slot is warmed up with production settings
-2. **Health Check**: Verify application starts successfully
-3. **Validation**: Run custom validation scripts if configured
+- **Application Insights** — request rates and response times, dependency tracking (DB, HTTP calls), automatic exception capture, and custom business metrics. The primary tool for performance and failure analysis.
+- **Diagnostic logging** — application logs, web server (request) logs, detailed error messages, and failed-request tracing.
+- **Log stream** — a live tail of the app's logs (also reachable through Kudu); the first place to look when an app fails to start.
 
-#### Swap Execution
-1. **DNS Update**: Update internal DNS to point to new slot
-2. **Configuration Apply**: Apply production configuration to target slot
-3. **Traffic Routing**: Route all traffic to newly swapped slot
+## 16. WebJobs (background tasks)
 
-#### Post-swap Monitoring
-1. **Health Monitoring**: Continuous monitoring of swapped application
-2. **Metrics Collection**: Collect performance and error metrics
-3. **Rollback Trigger**: Automatic rollback if health checks fail
+WebJobs run background scripts or programs in the same plan as the app, for work that is not request-driven (queue processing, scheduled cleanup):
 
-### Swap Types
+- **Continuous** — start when deployed and run constantly (e.g. a queue listener). Require **Always On**, otherwise the host unloads them when the app goes idle.
+- **Triggered** — run on a CRON schedule or on demand, then exit.
 
-#### Standard Swap
-- **Complete Traffic Switch**: All traffic moves to target slot
-- **Immediate Effect**: Changes take effect immediately
-- **Use Case**: Full production deployments
+WebJobs are managed through Kudu. For heavier or independently scaled background work, Azure Functions is usually the better fit.
 
-#### Swap with Preview
-- **Two-phase Process**: Preview changes before completing swap
-- **Validation Opportunity**: Test with production configuration
-- **Manual Completion**: Complete swap after validation
+## 17. Backup and Restore
 
-#### Traffic Routing
-- **Gradual Transition**: Route percentage of traffic to new slot
-- **A/B Testing**: Compare performance between slots
-- **Canary Deployment**: Minimize risk with gradual rollout
+Standard and above support scheduled and on-demand backups of the app's content and configuration (and optionally a linked database) to a storage account, with restore to the same or a new app. The tier governs backup frequency and retention.
 
-### Swap Configuration
+## 18. Performance
 
-#### Performing Swap via Azure Portal
-1. Navigate to **App Service** > **Deployment slots**
-2. Click **Swap** button
-3. Select **Source** and **Target** slots
-4. Review configuration changes
-5. Click **Swap** to execute
+- **Always On** — keeps the app warm so it is not unloaded after idle, eliminating cold starts (Basic+; also required for continuous WebJobs).
+- **Caching** — output caching for rendered pages, Azure Cache for Redis for distributed/session data, and Azure CDN for static content.
+- **Compression and minification** — enable gzip and minify CSS/JS to reduce payload size.
+- **Connection pooling** — reuse database connections to avoid per-request connection overhead.
 
-#### Swap via Azure CLI
-```bash
-# Standard swap
-az webapp deployment slot swap \
-  --resource-group myResourceGroup \
-  --name myApp \
-  --slot staging \
-  --target-slot production
+## ⚠️ Gotchas
 
-# Swap with preview
-az webapp deployment slot swap \
-  --resource-group myResourceGroup \
-  --name myApp \
-  --slot staging \
-  --target-slot production \
-  --action preview
-```
+- **You pay for the plan even when the app is stopped.** Billing is per instance-hour for the tier, regardless of traffic. Scale down or delete the plan to stop charges.
+- **Free/Basic tiers do not match production.** No autoscale or slots (and Free/Shared have no dedicated compute), so testing on them does not reflect production behavior.
+- **Apps on the same plan share CPU/RAM.** Consolidating apps to reduce cost can let one busy app starve the others. Isolate high-traffic apps on their own plan.
+- **Settings not marked "slot setting" move during a swap.** A non-sticky connection string moves into production, pointing it at the staging database. Mark all environment-specific values as sticky.
+- **Autoscale without a maximum can lead to unexpected cost.** A traffic spike or retry storm scales to the limit. Always set a maximum instance count.
+- **Swapping without warmup causes a cold-start delay.** Use swap with preview or a warmup path so the target slot is warm before it takes traffic.
+- **VNet integration is outbound only.** It does not make the app private; that requires a private endpoint. The two are frequently confused.
+- **Canary traffic routing needs session affinity.** Without `x-ms-routing-name` pinning, a user can bounce between old and new versions mid-session.
+- **Windows App Service runs in a sandbox.** Restricted Win32 APIs, no GDI/font calls, limited registry and drive access. Libraries needing these (some PDF/imaging or COM components) can fail — use Linux, a container, or a VM instead.
 
-#### Swap via PowerShell
-```powershell
-# Standard swap
-Switch-AzWebAppSlot -ResourceGroupName "myResourceGroup" `
-  -Name "myApp" `
-  -SourceSlotName "staging" `
-  -DestinationSlotName "production"
-```
+## Troubleshooting
 
-### Swap Rollback Strategies
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| App won't start / 503 on boot | Wrong startup command, missing app setting, port mismatch | Check **Log stream** / Kudu; Linux apps must listen on `WEBSITES_PORT` |
+| Deploy succeeds but old code serves | Browser/CDN cache, or deployed to the wrong slot | Hard refresh; confirm the target slot |
+| Production uses the wrong database after a swap | Connection string not marked **slot setting** | Mark it sticky, redeploy |
+| Autoscale never triggers | Below Standard tier, or threshold not met | Upgrade to Standard+; lower threshold/duration |
+| Cannot reach private SQL / storage | No VNet integration | Use a dedicated tier (Basic+) with VNet integration (outbound) |
+| Key Vault reference shows as empty | Managed identity missing or no Key Vault access policy | Enable managed identity; grant it `get` on the secret |
+| Random slow first requests | Instance recycled or scaled in | Enable **Always On**; warm slots before swap |
+| Auth redirect loop / 401 | Wrong redirect URL or provider config | Verify redirect URLs and client ID/secret |
 
-#### Immediate Rollback
-- **Quick Revert**: Swap back to previous slot immediately
-- **Minimal Downtime**: Usually completes in seconds
-- **Emergency Response**: For critical issues
+## Quick Reference
 
-#### Gradual Rollback
-- **Traffic Reduction**: Gradually reduce traffic to problematic slot
-- **Monitoring**: Monitor metrics during rollback process
-- **User Impact**: Minimize user disruption
-
----
-
-## Additional Important Topics
-
-### Application Settings and Configuration
-
-#### Environment Variables
-- **Runtime Configuration**: Configure app behavior without code changes
-- **Secure Storage**: Sensitive values encrypted at rest
-- **Slot-specific**: Can be configured per deployment slot
-
-#### Connection Strings
-- **Database Configuration**: Secure database connection management
-- **Type-specific**: SQL Server, MySQL, PostgreSQL, Custom
-- **Automatic Injection**: Available as environment variables
-
-### Monitoring and Diagnostics
-
-#### Application Insights
-- **Performance Monitoring**: Track response times and dependencies
-- **Error Tracking**: Automatic exception capture and analysis
-- **User Analytics**: Understand user behavior and usage patterns
-- **Custom Metrics**: Track business-specific metrics
-
-#### Diagnostic Logging
-- **Application Logs**: Custom application logging
-- **Web Server Logs**: IIS request logs
-- **Detailed Error Messages**: Comprehensive error information
-- **Failed Request Tracing**: Debug request processing issues
-
-### Security Best Practices
-
-#### Network Security
-- **VNet Integration**: Connect to private networks
-- **Private Endpoints**: Secure inbound connectivity
-- **IP Restrictions**: Limit access to specific IP ranges
-- **Service Tags**: Use Azure service tags for firewall rules
-
-#### Certificate Management
-- **SSL/TLS**: Secure communications with HTTPS
-- **Custom Certificates**: Upload and manage certificates
-- **Managed Certificates**: Free SSL certificates from Azure
-- **Certificate Binding**: Bind certificates to custom domains
-
-### Performance Optimization
-
-#### Caching Strategies
-- **Output Caching**: Cache rendered pages
-- **Data Caching**: Cache frequently accessed data
-- **CDN Integration**: Use Azure CDN for static content
-- **Redis Cache**: Implement distributed caching
-
-#### Resource Optimization
-- **Connection Pooling**: Optimize database connections
-- **Static Content**: Serve static files efficiently
-- **Compression**: Enable gzip compression
-- **Minification**: Minimize CSS and JavaScript files
-
----
-
-## Common Scenarios and Solutions
-
-### Scenario 1: Zero-Downtime Deployment
-1. **Setup**: Create staging deployment slot
-2. **Deploy**: Deploy new version to staging slot
-3. **Test**: Thoroughly test in staging environment
-4. **Swap**: Perform slot swap to production
-5. **Monitor**: Watch for issues and rollback if needed
-
-### Scenario 2: A/B Testing
-1. **Deploy**: Deploy variant to staging slot
-2. **Configure**: Set up traffic routing (e.g., 10% to staging)
-3. **Monitor**: Collect metrics from both versions
-4. **Analyze**: Compare performance and user engagement
-5. **Decide**: Choose winning version and complete rollout
-
-### Scenario 3: Scaling for Traffic Spikes
-1. **Monitor**: Set up CPU and memory monitoring
-2. **Configure**: Create auto-scaling rules
-3. **Test**: Verify scaling behavior during load testing
-4. **Optimize**: Adjust thresholds based on application behavior
-5. **Alert**: Set up alerts for scaling events
-
-### Scenario 4: Multi-region Deployment
-1. **Plan**: Choose regions based on user geography
-2. **Deploy**: Create App Services in multiple regions
-3. **Configure**: Set up Traffic Manager for routing
-4. **Sync**: Ensure consistent deployments across regions
-5. **Monitor**: Track performance and availability globally
-
----
-
-## Troubleshooting Common Issues
-
-### Deployment Failures
-- **Check Build Logs**: Review build output for errors
-- **Verify Dependencies**: Ensure all dependencies are included
-- **Configuration Issues**: Validate app settings and connection strings
-- **Resource Limits**: Check if hitting storage or compute limits
-
-### Performance Issues
-- **Enable Diagnostics**: Turn on detailed logging
-- **Monitor Metrics**: Use Application Insights for performance tracking
-- **Database Performance**: Check database connection and query performance
-- **Resource Utilization**: Monitor CPU and memory usage
-
-### Authentication Problems
-- **Redirect URLs**: Verify correct redirect URLs are configured
-- **Token Expiration**: Check token refresh configuration
-- **Provider Configuration**: Validate identity provider settings
-- **CORS Issues**: Configure CORS for single-page applications
-
->This comprehensive guide covers all the essential aspects of Azure App Service, from basic concepts to advanced deployment strategies and troubleshooting techniques.
+App Service runs your code on Azure-managed virtual machines behind a load balancer. You rent the compute as an **App Service Plan** (the tier determines available features; size × count determines capacity, billed per instance-hour whether or not traffic arrives) and run one or more **apps** on it. **Standard** enables autoscale and **deployment slots**; **VNet integration** (outbound) works on any dedicated tier (**Basic+**), while inbound **private endpoints** need Premium v2/v3, and full single-tenant isolation needs an **App Service Environment** (Isolated). Deployment goes through **Kudu/SCM** — typically CI/CD to a **staging slot**, which is warmed and **swapped** into production (a routing change, not a redeploy, so no downtime; only **sticky settings** stay with their slot). Slots enable **blue-green** (the swap itself, with instant rollback) and **canary / A/B** (gradual traffic routing). Configuration is injected as **environment variables**, with **Key Vault references** resolved via **managed identity** for secrets. Scale **up** for heavy requests and **out** for volume, always with a maximum and cooldown. Monitoring is through **Application Insights**.
